@@ -1,6 +1,6 @@
 // Omogućava rad bez interneta: sve što je jednom otvoreno čuva se u kešu.
 // Kada ima interneta, uvek se uzima najnovija verzija.
-const CACHE = "kd-v1";
+const CACHE = "kd-v2";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil(

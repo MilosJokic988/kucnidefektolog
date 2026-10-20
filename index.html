@@ -2,69 +2,41 @@
 <html lang="sr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Kućni defektolog</title>
   <meta name="description" content="Program podrške porodici – aktivnosti, zapažanja i podrška defektologa.">
+  <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#234d43">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Kućni defektolog">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="layout">
+  <div class="layout" id="layout">
     <aside class="sidebar" id="sidebar">
-      <a class="brand" href="#plan">
-        <span class="brand-mark">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M12 16.5s-2.6-1.6-2.6-3.3a1.4 1.4 0 0 1 2.6-.7 1.4 1.4 0 0 1 2.6.7c0 1.7-2.6 3.3-2.6 3.3z" fill="#e8b4a0" stroke="#e8b4a0"/></svg>
-        </span>
+      <a class="brand" href="#/" id="brand">
+        <span class="brand-mark" id="brand-mark"></span>
         <span class="brand-name">Kućni<br>defektolog</span>
       </a>
-
-      <p class="eyebrow side-label">Vaš porodični prostor</p>
-      <nav class="nav">
-        <a href="#plan" data-page="plan">
-          <svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.2"/><rect x="14" y="4" width="6" height="6" rx="1.2"/><rect x="4" y="14" width="6" height="6" rx="1.2"/><rect x="14" y="14" width="6" height="6" rx="1.2"/></svg>
-          Moj program
-        </a>
-        <a href="#aktivnosti" data-page="aktivnosti">
-          <svg viewBox="0 0 24 24"><path d="M3 5.5c3-1 6-1 9 1 3-2 6-2 9-1V19c-3-1-6-1-9 1-3-2-6-2-9-1z"/><path d="M12 6.5V20"/></svg>
-          Aktivnosti
-        </a>
-        <a href="#zapazanja" data-page="zapazanja">
-          <svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8.5h6M9 12h6M9 15.5h4"/></svg>
-          Naša zapažanja
-        </a>
-        <a href="#podrska" data-page="podrska">
-          <svg viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/></svg>
-          <span id="nav-podrska">Podrška</span>
-        </a>
-      </nav>
-
-      <div class="side-foot">
-        <div class="person">
-          <span class="avatar" id="side-initials"></span>
-          <div>
-            <strong id="side-name"></strong>
-            <small id="side-role"></small>
-          </div>
-        </div>
-        <a class="workspace" href="#podrska">Moj radni prostor <span>↗</span></a>
-      </div>
+      <p class="eyebrow side-label" id="side-label">Vaš porodični prostor</p>
+      <nav class="nav" id="nav"></nav>
+      <div class="side-foot" id="side-foot"></div>
     </aside>
 
     <div class="main">
       <header class="topbar">
         <button class="menu-btn" id="menu-btn" aria-label="Meni">☰</button>
         <span class="top-brand">Kućni defektolog</span>
-        <div class="crumbs">Program podrške porodici <span>/</span> <strong id="crumb"></strong></div>
+        <div class="crumbs" id="crumbs"></div>
       </header>
 
-      <main class="content" id="content"></main>
+      <main class="content" id="content"><div class="loading"><div class="spinner"></div></div></main>
 
       <footer class="footer">
         <span>Razvoj kroz igru i svakodnevicu.</span>
@@ -73,19 +45,14 @@
     </div>
   </div>
 
-  <nav class="bottom-nav" aria-label="Glavni meni">
-    <a href="#plan" data-page="plan"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.2"/><rect x="14" y="4" width="6" height="6" rx="1.2"/><rect x="4" y="14" width="6" height="6" rx="1.2"/><rect x="14" y="14" width="6" height="6" rx="1.2"/></svg>Program</a>
-    <a href="#aktivnosti" data-page="aktivnosti"><svg viewBox="0 0 24 24"><path d="M3 5.5c3-1 6-1 9 1 3-2 6-2 9-1V19c-3-1-6-1-9 1-3-2-6-2-9-1z"/><path d="M12 6.5V20"/></svg>Aktivnosti</a>
-    <a href="#zapazanja" data-page="zapazanja"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8.5h6M9 12h6M9 15.5h4"/></svg>Zapažanja</a>
-    <a href="#podrska" data-page="podrska"><svg viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/></svg>Podrška</a>
-  </nav>
+  <nav class="bottom-nav" id="bottom-nav" aria-label="Glavni meni"></nav>
 
   <div class="modal" id="modal" hidden>
     <div class="modal-backdrop" data-close></div>
     <div class="modal-card" role="dialog" aria-modal="true" id="modal-card"></div>
   </div>
 
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script type="module" src="/src/main.js"></script>
 </body>
