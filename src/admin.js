@@ -6,7 +6,7 @@ import { $, esc, toast, openModal, closeModal, fmtDate, todayISO, relTime, ICON,
 import { normalizeContent, currentWeek } from "./program.js";
 import { progressView, reportHtml, openReportWindow } from "./family.js";
 import * as editor from "./editor.js";
-import { importProgram } from "./importer.js";
+import { importProgram, importPackage, createEmptyProgram } from "./importer.js";
 
 const A = {
   overview: null, showArchived: false, family: null, familyId: null, tab: "pregled",
@@ -59,7 +59,7 @@ export async function load(route) {
       }
     }
     if (route.view === "import" && A.aiConfigured === null) {
-      aiStatus().then(s => { A.aiConfigured = Boolean(s.configured); const el = $("#ai-status"); if (el && !A.aiConfigured) el.hidden = false; });
+      A.aiConfigured = Boolean((await aiStatus()).configured);
     }
   }
 }
@@ -257,7 +257,7 @@ function tabProgram() {
       <div class="prog-actions">${actions}</div>
     </div>`;
   return `
-    <a class="upload-cta" href="#/admin/p/${f.id}/novi">${ICON.upload}<div><strong>Novi program iz Word ili PDF fajla</strong><small>AI pročita dokument, a vi pregledate i objavite. Prethodni program ostaje sačuvan u istoriji.</small></div><span>→</span></a>
+    <a class="upload-cta" href="#/admin/p/${f.id}/novi">${ICON.upload}<div><strong>Novi program</strong><small>Ubacite gotov program ili počnite od praznog. Prethodni program ostaje sačuvan u istoriji.</small></div><span>→</span></a>
     ${active ? card(active, `
       <a class="btn" href="#/admin/p/${f.id}/program/${active.id}">${ICON.edit} Uredi</a>
       <button class="btn-ghost" data-action="preview" data-pid="${active.id}">${ICON.eye} Pregled</button>`) : `<p class="muted" style="margin:18px 0">Porodica još nema objavljen program.</p>`}
@@ -327,7 +327,7 @@ function importView() {
     const pct = st.total ? Math.round((st.done / st.total) * 100) : null;
     return `
       <div class="page-head"><p class="eyebrow">${esc(f.name)}</p><h1>Pravim program…</h1>
-      <p class="lead">Ne zatvarajte ovu stranu. Obično traje 1–3 minuta.</p></div>
+      <p class="lead">Ne zatvarajte ovu stranu.</p></div>
       <div class="panel import-progress">
         <div class="spinner"></div>
         <p id="import-label">${esc(st.label)}</p>
@@ -335,26 +335,28 @@ function importView() {
         <small class="muted">Fajl: ${esc(st.file)}</small>
       </div>`;
   }
+  const ai = A.aiConfigured;
   return `
     <div class="page-head">
       <a class="btn-link" href="#/admin/p/${f.id}">← ${esc(f.name)}</a>
       <h1 style="margin-top:12px">Novi program</h1>
-      <p class="lead">Ubacite Word (.docx) ili PDF program. AI prenese procenu, nedelje, aktivnosti sa koracima, rutine i ilustracije – vi pregledate i objavite.</p>
+      <p class="lead">Ubacite gotov program (.json)${ai === false ? "" : " ili Word / PDF fajl"}, ili počnite od praznog programa. Program se prvo čuva kao nacrt – porodica ga vidi tek kad kliknete „Objavi“.</p>
     </div>
-    <div class="notice" id="ai-status" hidden>${ICON.info} AI još nije podešen na serveru (Vercel → ANTHROPIC_API_KEY). Uvoz neće raditi dok se ne podesi.</div>
+    ${ai === false ? `<div class="notice">${ICON.info} Automatsko čitanje Word/PDF fajlova (AI) nije uključeno. Ubacite gotov program (.json) ili napravite prazan program.</div>` : ""}
     <label class="dropzone" id="dropzone">
       ${ICON.upload}
       <strong>Prevucite fajl ovde ili kliknite da izaberete</strong>
-      <small>Word (.docx) ili PDF · ilustracije iz Word-a se prenose automatski</small>
-      <input type="file" id="import-file" accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+      <small>${ai === false ? "Gotov program (.json)" : "Gotov program (.json), Word (.docx) ili PDF"}</small>
+      <input type="file" id="import-file" accept=".json,application/json${ai === false ? "" : ",.docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"}" hidden>
     </label>
+    <div class="or-row"><span>ili</span></div>
+    <button class="btn-ghost btn-lg" data-action="new-empty">${ICON.edit} Napravi prazan program i unesi ga ručno</button>
     <div class="panel tips-panel">
       <h3>Dobro je znati</h3>
       <ul class="clean-list">
-        <li>Lični podaci (prezimena, telefoni, mejlovi, adrese, datumi rođenja) automatski se uklanjaju pre slanja AI-ju. Upitnik i anamneza se ne prenose u aplikaciju.</li>
         <li>Program se prvo čuva kao <b>nacrt</b> – porodica ga ne vidi dok ne kliknete „Objavi“.</li>
+        <li>Pre objave sve možete proveriti i ispraviti, i dodati ili ukloniti ilustracije.</li>
         <li>Kada objavite novi program, prethodni prelazi u istoriju, a sva zapažanja ostaju.</li>
-        <li>Najbolje rezultate daje Word fajl (prenose se i ilustracije).</li>
       </ul>
     </div>`;
 }
@@ -364,7 +366,9 @@ async function runImport(file, rerender) {
   A.importing = { label: "Počinjem…", file: file.name, done: 0, total: 0 };
   rerender();
   try {
-    const res = await importProgram(file, f.id, st => {
+    const run = /\.json$/i.test(file.name) ? importPackage : importProgram;
+    if (run === importProgram && A.aiConfigured === false) throw new Error("Automatsko čitanje Word/PDF fajlova nije uključeno. Ubacite gotov program (.json).");
+    const res = await run(file, f.id, st => {
       Object.assign(A.importing, st);
       const l = $("#import-label"), b = $("#import-bar");
       if (l) l.textContent = st.label;
@@ -417,6 +421,13 @@ export async function onClick(e, t, rerender, ctx) {
     const f = A.family && A.family.family;
     switch (t.dataset.action) {
       case "new-family": return newFamilyModal();
+      case "new-empty": {
+        const r = await createEmptyProgram(f.id, f.children || "");
+        A.family = null; A.familyId = null;
+        toast("Prazan program je napravljen. Popunite ga i objavite.");
+        location.hash = `#/admin/p/${f.id}/program/${r.programId}`;
+        return;
+      }
       case "toggle-archived": A.showArchived = t.checked; return rerender();
       case "delete-tests": {
         const n = (A.overview || []).filter(x => x.is_test).length;

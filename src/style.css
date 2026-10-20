@@ -730,3 +730,5 @@ body:not(.has-bottom-nav) .bottom-nav { display: none !important; }
   .bottom-nav, .preview-bar, .notice { display: none !important; }
   .print-steps { display: block !important; }
 }
+.or-row { display: flex; align-items: center; gap: 14px; margin: 18px 0; color: var(--muted); font-size: 12px; }
+.or-row::before, .or-row::after { content: ""; flex: 1; height: 1px; background: var(--line); }

@@ -115,3 +115,53 @@ export async function importProgram(file, familyId, onStatus = () => {}) {
 function stripTemp(content) {
   return { ...content, activities: content.activities.map(({ _imageNumbers, ...a }) => a) };
 }
+
+/* ------------------------------------------------------------------
+   Uvoz gotovog programa (.json) – bez AI-ja.
+   Format: { format: "kucni-defektolog-program", version: 1, content: {...},
+             images: { "<ref>": "data:image/jpeg;base64,..." } }
+   Aktivnosti slike navode u polju imageRefs: ["<ref>", ...]. */
+
+export const PACKAGE_FORMAT = "kucni-defektolog-program";
+
+export async function importPackage(file, familyId, onStatus = () => {}) {
+  onStatus({ label: "Čitam fajl…" });
+  let pkg;
+  try { pkg = JSON.parse(await file.text()); } catch { throw new Error("Fajl nije ispravan program (.json)."); }
+  if (!pkg || pkg.format !== PACKAGE_FORMAT || !pkg.content) throw new Error("Ovo nije program za aplikaciju Kućni defektolog.");
+  const refsByActivity = (pkg.content.activities || []).map(a => (Array.isArray(a.imageRefs) ? a.imageRefs.map(String) : []));
+  const content = normalizeContent(pkg.content);
+
+  onStatus({ label: "Čuvam nacrt programa…" });
+  const saved = await admin.saveProgram({ family_id: familyId, title: content.title || "Program", content, source_name: file.name });
+
+  const images = pkg.images || {};
+  const used = [...new Set(refsByActivity.flat())].filter(r => typeof images[r] === "string" && images[r].startsWith("data:image/"));
+  const idByRef = {};
+  const warnings = [];
+  for (let k = 0; k < used.length; k++) {
+    onStatus({ label: `Čuvam ilustracije (${k + 1} od ${used.length})…`, done: k, total: used.length });
+    const data = images[used[k]];
+    try {
+      const r = await admin.addImage({ program_id: saved.id, data, mime: data.slice(5, data.indexOf(";")) || "image/jpeg" });
+      idByRef[used[k]] = r.id;
+      rememberImage(r.id, data);
+    } catch { warnings.push(`Ilustracija ${used[k]} nije sačuvana.`); }
+  }
+  content.activities.forEach((a, i) => { a.imageIds = (refsByActivity[i] || []).map(r => idByRef[r]).filter(Boolean); });
+  await admin.saveProgram({ id: saved.id, content });
+  onStatus({ label: "Gotovo!", done: 1, total: 1 });
+  return { programId: saved.id, warnings };
+}
+
+/* Prazan program za ručni unos. */
+export async function createEmptyProgram(familyId, childNames = "") {
+  const content = normalizeContent({
+    title: "Novi program", childNames, durationWeeks: 4,
+    areas: [{ id: "1", title: "Prva oblast", intro: "" }],
+    weeks: [1, 2, 3, 4].map(n => ({ label: `${n}. nedelja`, fromWeek: n, toWeek: n, title: "", focus: "", summary: "" })),
+    activities: [{ code: "1.1", title: "Prva aktivnost", areaId: "1", weeks: [1], steps: [] }],
+  });
+  const saved = await admin.saveProgram({ family_id: familyId, title: content.title, content, source_name: "" });
+  return { programId: saved.id };
+}
