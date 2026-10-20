@@ -53,6 +53,7 @@ export async function load(route) {
     if (route.view === "editor") {
       const prog = A.family.history.find(h => h.id === route.pid);
       if (!prog) throw new Error("Program nije pronađen.");
+      if (!prog.content && !(A.family.program && A.family.program.id === prog.id)) throw new Error("Sadržaj prethodnog programa nije dostupan. U Supabase SQL Editoru ponovo pokrenite fajl supabase/schema.sql.");
       if (!editor.current() || editor.current().id !== prog.id) {
         const full = A.family.program && A.family.program.id === prog.id ? { ...prog, content: A.family.program.content } : prog;
         editor.setProgram(full, A.family.family);
@@ -266,6 +267,8 @@ function tabProgram() {
       <button class="btn-ghost" data-action="publish" data-pid="${p.id}">Objavi</button>
       <button class="icon-btn danger" data-action="delete-program" data-pid="${p.id}" title="Obriši nacrt">${ICON.trash}</button>`)).join("")}` : ""}
     ${archived.length ? `<h3 class="ed-h">Prethodni programi</h3>${archived.map(p => card(p, `
+      <a class="btn" href="#/admin/p/${f.id}/program/${p.id}">${ICON.eye} Otvori</a>
+      <button class="btn-ghost" data-action="preview" data-pid="${p.id}">Pregled kao roditelj</button>
       <button class="btn-ghost" data-action="republish" data-pid="${p.id}">Vrati kao aktivan</button>`)).join("")}` : ""}`;
 }
 
@@ -472,6 +475,7 @@ export async function onClick(e, t, rerender, ctx) {
       case "preview": {
         const p = A.family.history.find(x => x.id === t.dataset.pid);
         const full = A.family.program && A.family.program.id === p.id ? { ...p, content: A.family.program.content } : p;
+        if (!full.content) return toast("Sadržaj prethodnog programa nije dostupan. U Supabase SQL Editoru ponovo pokrenite fajl supabase/schema.sql.");
         return ctx.preview(full, f);
       }
       case "publish": return publishModal(t.dataset.pid);

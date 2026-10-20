@@ -185,7 +185,7 @@ begin
     'history', coalesce((select jsonb_agg(jsonb_build_object(
         'id', id, 'title', title, 'status', status, 'start_date', start_date,
         'published_at', published_at, 'created_at', created_at, 'source_name', source_name,
-        'content', case when include_all_programs and status <> 'archived' then content else null end)
+        'content', case when include_all_programs then content else null end)
         order by created_at desc)
       from programs where family_id = fid and (include_all_programs or status = 'archived')), '[]'::jsonb),
     'tried', coalesce((select jsonb_agg(activity_code) from tried
