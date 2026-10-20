@@ -353,7 +353,7 @@ function cleanText(text) {
    mejlovi, adrese, datumi rođenja) pre slanja AI-ju. Ime deteta ostaje. */
 export function redactPersonalData(text) {
   const surnames = new Set();
-  const rowKey = /^\|\s*(ime i prezime[^|]*|ime roditelja[^|]*|roditelj[^|]*|staratelj[^|]*|adresa[^|]*|grad[^|]*|država[^|]*|drzava[^|]*|mesto stanovanja[^|]*|telefon[^|]*|kontakt[^|]*|e-?mail[^|]*|mejl[^|]*|datum rođenja[^|]*|datum rodjenja[^|]*|jmbg[^|]*)\|\s*([^|\n]*)\|?.*$/gim;
+  const rowKey = /^\|\s*(ime i prezime[^|]*|ime roditelja[^|]*|roditelj(?:i|a)?(?:\s*\/\s*staratelj[a-zšđčćž]*)?\s*|staratelj[a-zšđčćž]*\s*|adresa[^|]*|grad[^|]*|država[^|]*|drzava[^|]*|mesto stanovanja[^|]*|telefon[^|]*|kontakt[^|]*|e-?mail[^|]*|mejl[^|]*|datum rođenja[^|]*|datum rodjenja[^|]*|jmbg[^|]*)\|\s*([^|\n]*)\|?.*$/gim;
   text = text.replace(rowKey, (m, key, value) => {
     if (/ime|roditelj|staratelj/i.test(key)) {
       value.split(/\s+i\s+|,|\//).forEach(person => {
@@ -365,15 +365,25 @@ export function redactPersonalData(text) {
     }
     return `| ${key.trim()} | [uklonjeno] |`;
   });
+  const colonKey = /^(ime i prezime(?: deteta)?|ime deteta|ime roditelja|roditelj(?:i)?|roditelj\/staratelj|mesto stanovanja|adresa|grad|telefon|kontakt|e-?mail)\s*:\s*(.+)$/gim;
+  text = text.replace(colonKey, (m, key, value) => {
+    if (/ime|roditelj|staratelj/i.test(key)) {
+      value.split(/\s+i\s+|,|\//).forEach(person => {
+        person.trim().split(/\s+/).filter(w => /^[A-ZŠĐČĆŽ][a-zšđčćž]+$/.test(w)).slice(1).forEach(w => surnames.add(w));
+      });
+      return /roditelj|staratelj/i.test(key) ? `${key}: [uklonjeno]` : `${key}: ${value.trim().split(/\s+/)[0] || ""}`;
+    }
+    return `${key}: [uklonjeno]`;
+  });
   for (const sname of surnames) {
     if (sname.length < 3) continue;
     const stem = sname.length > 5 ? sname.slice(0, -1) : sname;
-    text = text.replace(new RegExp(`\\b${stem}[a-zšđčćž]{0,3}\\b`, "g"), "[prezime]");
+    text = text.replace(new RegExp(`(?<!\\p{L})${stem}\\p{L}{0,3}(?!\\p{L})`, "gu"), "[prezime]");
   }
   return text
     .replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, "[mejl uklonjen]")
-    .replace(/(\+|00)\d[\d\s()/-]{7,}\d/g, "[telefon uklonjen]")
-    .replace(/\b0\d{1,2}[\s/-]?\d{3,4}[\s-]?\d{3,4}\b/g, "[telefon uklonjen]")
+    .replace(/(?<![\w./])(\+|00)\d[\d\s()/-]{7,}\d/g, "[telefon uklonjen]")
+    .replace(/(?<![\w./])\b0\d{1,2}[\s/-]?\d{3,4}[\s-]?\d{3,4}\b/g, "[telefon uklonjen]")
     .replace(/\b\d{13}\b/g, "[JMBG uklonjen]")
     .replace(/(datum rođenja|datum rodjenja|rođen[a]?)([^\n]{0,8}?)(\d{1,2}\.\s?\d{1,2}\.\s?\d{4}\.?)/gi, "$1$2[datum uklonjen]");
 }

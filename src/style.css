@@ -444,12 +444,13 @@ button:disabled { opacity: .4; cursor: default; }
 .stat b { font-family: var(--serif); font-weight: 400; font-size: 42px; color: var(--green); line-height: 1; }
 .stat b small { font-size: 18px; color: var(--muted); }
 .stat span { font-size: 11px; color: var(--muted); line-height: 1.5; }
-.progress-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; align-items: start; }
-.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.progress-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 20px; margin-top: 20px; align-items: start; }
+.progress-grid > * { min-width: 0; }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-auto-rows: auto; gap: 6px; max-width: 420px; }
 .cal-h { text-align: center; font-size: 10px; color: var(--muted); font-weight: 600; }
-.cal-day, .cal-empty { aspect-ratio: 1; border-radius: 10px; display: grid; place-items: center; font-size: 11.5px; }
+.cal-day, .cal-empty { aspect-ratio: 1; min-width: 0; width: 100%; height: auto; box-sizing: border-box; border-radius: 10px; display: grid; place-items: center; font-size: 11.5px; }
 .cal-day { background: #f1eee5; color: var(--muted); }
-.cal-day.today { outline: 2px solid var(--green); outline-offset: 1px; }
+.cal-day.is-today { outline: 2px solid var(--green); outline-offset: 1px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 18px; font-size: 10.5px; color: var(--muted); }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 .hbar { margin-bottom: 14px; font-size: 12px; }

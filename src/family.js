@@ -490,7 +490,7 @@ export function progressView(data, c, { showReport = true } = {}) {
     const isk = last && iskustvo(last.experience);
     const color = isk ? isk.boja : (ns.length ? "#7d9a7b" : "");
     const title = ns.length ? `${fmtDate(d)} – ${ns.map(n => n.activity_title).join(", ")}` : fmtDate(d);
-    return `<span class="cal-day ${d === todayISO() ? "today" : ""}" title="${esc(title)}" style="${color ? `background:${color};color:#fff` : ""}">${Number(d.slice(8))}</span>`;
+    return `<span class="cal-day${d === todayISO() ? " is-today" : ""}" title="${esc(title)}" style="${color ? `background:${color};color:#fff` : ""}">${Number(d.slice(8))}</span>`;
   }));
   const max = Math.max(1, ...perAct.map(x => x.total));
   return `
