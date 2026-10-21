@@ -16,7 +16,19 @@ export const PROFILE = {
   kratko: "Defektolog · podrška porodici",
   opis: "Podršku povezujemo sa interesovanjima deteta, njegovim razvojnim potrebama i svakodnevicom vaše porodice.",
   citat: "Postepeno. U svom ritmu. Ka uspehu.",
+  foto: "/dragana.jpg",
+  avatar: "/dragana-avatar.jpg",
+  // Pozdrav koji porodica vidi na početku programa (dok ga ne zatvori)
+  dobrodoslica: "Drago mi je što ste tu. Ovde je sve što smo zajedno isplanirali za vaše dete. Ne morate uraditi sve – dovoljno je malo, ali redovno. Svaki dan vas čeka kratak plan, a kad god vam nešto nije jasno ili imate dan kada ništa ne ide, pišite mi. Tu sam.",
 };
+
+// Rečenice kad porodica uradi ceo „Plan za danas“
+export const BRAVO = [
+  "Bravo! Danas ste uradili sve – i za dete i za vas to je mnogo. 🌱",
+  "Ceo plan za danas je gotov. Ponosni budite na sebe. ☀",
+  "Uspeli ste! Mali koraci, svaki dan – baš tako se raste. 🌿",
+  "Sve tri stvari danas. To je pravi porodični ritam. 💛",
+];
 
 export const ISKUSTVA = [
   { id: "prijalo", naziv: "Prijalo je", ikona: "☀", boja: "#7d9a7b" },

@@ -733,3 +733,62 @@ body:not(.has-bottom-nav) .bottom-nav { display: none !important; }
 }
 .or-row { display: flex; align-items: center; gap: 14px; margin: 18px 0; color: var(--muted); font-size: 12px; }
 .or-row::before, .or-row::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+/* ================================================================ Draganina fotografija */
+.avatar { position: relative; overflow: hidden; }
+.avatar img, .big-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.profile .big-avatar { position: relative; overflow: hidden; width: 92px; height: 92px; }
+.welcome-photo { position: relative; width: 112px; height: 112px; margin: 0 auto 22px; border-radius: 50%; background: var(--green); display: grid; place-items: center; box-shadow: 0 10px 30px rgba(35, 77, 67, .18); }
+.welcome-photo img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 4px solid var(--card); }
+.welcome-mark-mini { position: absolute; right: -4px; bottom: 2px; width: 38px; height: 38px; border-radius: 12px; background: var(--green); color: #f3efe4; display: grid; place-items: center; border: 3px solid var(--bg); }
+.welcome-mark-mini svg { width: 20px; height: 20px; }
+
+.welcome-note { display: flex; gap: 22px; align-items: center; margin-top: 24px; padding: 20px 24px; border-radius: 22px; background: #fbf4e6; border: 1px solid #efe2c6; }
+.welcome-note img { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 3px solid var(--card); }
+.welcome-text { font-family: var(--serif); font-size: 18px; line-height: 1.55; margin: 6px 0 4px; color: var(--ink); }
+.welcome-note .sign { font-family: var(--serif); font-style: italic; margin: 0 0 6px; color: var(--muted); }
+
+/* ================================================================ Plan za danas */
+.day-plan { margin-top: 24px; background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 22px; }
+.day-plan-head h2 { font-size: 26px; margin: 4px 0 12px; }
+.plan-count { white-space: nowrap; flex-shrink: 0; font-family: var(--serif); font-size: 22px; color: var(--green); background: var(--green-soft); border-radius: 14px; padding: 6px 14px; }
+.day-plan .today { margin: 10px 0; background: #fbfaf5; border-radius: 18px; padding-right: 64px; }
+.day-plan .today.is-done { opacity: .75; }
+.plan-row { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px; margin: 10px 0; background: #fbfaf5; }
+.plan-row.done { opacity: .7; }
+.plan-row.done strong { text-decoration: line-through; text-decoration-color: rgba(0,0,0,.25); }
+.plan-text { flex: 1; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; display: grid; gap: 3px; color: inherit; font: inherit; }
+.plan-text strong { font-family: var(--serif); font-size: 18px; font-weight: normal; }
+.plan-text small { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.plan-row .go { color: var(--muted); }
+.plan-check { width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; border: 2px solid #c9d3cc; background: var(--card); color: #fff; font-size: 17px; cursor: pointer; display: grid; place-items: center; transition: .15s; }
+.plan-check:hover { border-color: var(--green); }
+.plan-row.done .plan-check, .today.is-done .plan-check { background: var(--green); border-color: var(--green); }
+.plan-check.big { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; }
+.bravo { background: var(--green-soft); border-radius: 14px; padding: 12px 16px; margin: 0 0 6px; font-weight: 500; }
+.plan-foot { margin: 8px 2px 0; font-size: 12.5px; }
+
+/* ================================================================ Moj dan (Dragana) */
+.morning { display: flex; gap: 22px; align-items: flex-start; background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 22px 24px; margin: 6px 0 20px; }
+.morning-photo { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 3px solid var(--green-soft); }
+.morning-body { flex: 1; min-width: 0; }
+.morning h2 { font-size: 28px; margin: 4px 0 6px; }
+.todo { display: grid; gap: 8px; margin-top: 10px; }
+.todo-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 14px; background: #fbfaf5; border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: 14px; }
+.todo-row:hover { border-color: var(--green); }
+.todo-row .ico { width: 18px; height: 18px; color: var(--green); flex-shrink: 0; }
+.todo-row span { flex: 1; min-width: 0; }
+.todo-row em { font-style: normal; font-size: 11.5px; color: var(--green); background: var(--green-soft); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+
+@media (max-width: 760px) {
+  .welcome-note { flex-direction: column; text-align: center; padding: 20px; }
+  .welcome-text { font-size: 16px; }
+  .day-plan { padding: 16px; }
+  .day-plan-head h2 { font-size: 22px; }
+  .day-plan .today { padding-right: 18px; padding-bottom: 64px; }
+  .plan-check.big { top: auto; bottom: 16px; transform: none; }
+  .morning { flex-direction: column; padding: 18px; }
+  .morning-photo { width: 56px; height: 56px; }
+  .todo-row { flex-wrap: wrap; }
+  .todo-row em { margin-left: 30px; }
+}

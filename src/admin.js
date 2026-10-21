@@ -2,7 +2,7 @@
 
 import { admin as api, getSession, signIn, signOut, requestPasswordReset, updatePassword, aiStatus } from "./api.js";
 import { PROFILE, ISKUSTVA } from "./config.js";
-import { $, esc, toast, openModal, closeModal, fmtDate, todayISO, relTime, ICON, copyText, formCode, md } from "./util.js";
+import { $, esc, toast, openModal, closeModal, fmtDate, todayISO, longToday, relTime, ICON, copyText, formCode, md } from "./util.js";
 import { normalizeContent, currentWeek } from "./program.js";
 import { progressView, reportHtml, openReportWindow } from "./family.js";
 import * as editor from "./editor.js";
@@ -129,6 +129,53 @@ function attention(f) {
   return "";
 }
 
+/* „Moje jutro“: šta danas čeka Draganu – bez otvaranja porodice po porodicu. */
+function greeting() {
+  const h = new Date().getHours();
+  return h < 11 ? "Dobro jutro" : h < 18 ? "Dobar dan" : "Dobro veče";
+}
+
+function todoItems(all) {
+  const out = [];
+  const days = d => d ? Math.floor((Date.now() - new Date(d)) / 864e5) : null;
+  for (const f of all.filter(x => !x.archived)) {
+    const go = `#/admin/p/${f.id}`;
+    if (f.unread) out.push({ prio: 0, icon: ICON.send, go, text: `<b>${esc(f.name)}</b> vam je ${f.unread === 1 ? "poslala poruku" : `poslala ${f.unread} poruke`}`, tag: "odgovorite" });
+    if (f.new_obs) out.push({ prio: 1, icon: ICON.leaf, go, text: `<b>${esc(f.name)}</b>: ${f.new_obs} ${f.new_obs === 1 ? "novo zapažanje" : "nova zapažanja"}`, tag: "pročitajte" });
+    if (f.program && f.program.start_date) {
+      const passed = days(f.program.start_date + "T00:00");
+      const len = f.program.weeks * 7;
+      if (passed >= len) out.push({ prio: 2, icon: ICON.calendar, go: go, text: `<b>${esc(f.name)}</b>: program je završen ${passed - len === 0 ? "danas" : `pre ${passed - len} ${passed - len === 1 ? "dan" : "dana"}`}`, tag: "novi program" });
+      else if (len - passed <= 7) out.push({ prio: 3, icon: ICON.calendar, go, text: `<b>${esc(f.name)}</b>: poslednja nedelja programa (još ${len - passed} ${len - passed === 1 ? "dan" : "dana"})`, tag: "pripremite sledeći" });
+    }
+    if (!f.program && f.drafts) out.push({ prio: 4, icon: ICON.edit, go, text: `<b>${esc(f.name)}</b>: nacrt programa čeka objavu`, tag: "objavite" });
+    else if (!f.program) out.push({ prio: 5, icon: ICON.upload, go: `${go}/novi`, text: `<b>${esc(f.name)}</b> još nema program`, tag: "ubacite" });
+    else if (!f.consent_at && !f.last_seen_at && !f.obs_total && !f.unread) out.push({ prio: 6, icon: ICON.link, go, text: `<b>${esc(f.name)}</b> još nije otvorila link`, tag: "pošaljite ponovo" });
+    else {
+      const quiet = days(f.last_obs_at || f.last_seen_at);
+      if (quiet !== null && quiet > 4) out.push({ prio: 7, icon: ICON.heart, go, text: `<b>${esc(f.name)}</b> je tiha ${quiet} dana – možda kratka poruka podrške?`, tag: "javite se" });
+    }
+  }
+  return out.sort((a, b) => a.prio - b.prio);
+}
+
+function morningPanel(all) {
+  const items = todoItems(all);
+  return `
+    <section class="morning">
+      <img class="morning-photo" src="${PROFILE.avatar}" alt="" onerror="this.remove()">
+      <div class="morning-body">
+        <p class="eyebrow">Moj dan · ${esc(longToday())}</p>
+        <h2>${greeting()}, ${esc(PROFILE.imeKratko)}.</h2>
+        ${items.length
+          ? `<p class="muted">${items.length === 1 ? "Jedna stvar vas čeka:" : `${items.length} ${items.length < 5 ? "stvari vas čekaju" : "stvari vas čeka"}:`}</p>
+             <div class="todo">${items.slice(0, 8).map(x => `<a class="todo-row" href="${x.go}">${x.icon}<span>${x.text}</span><em>${x.tag}</em></a>`).join("")}</div>
+             ${items.length > 8 ? `<p class="muted" style="margin-top:8px">i još ${items.length - 8} ispod, na listi porodica.</p>` : ""}`
+          : `<p class="muted">Sve je mirno – nema poruka ni zapažanja koja čekaju. Uživajte u kafi. ☕</p>`}
+      </div>
+    </section>`;
+}
+
 function listView() {
   const all = A.overview || [];
   const list = all.filter(f => A.showArchived || !f.archived);
@@ -144,6 +191,7 @@ function listView() {
       </div>
       <button class="btn" data-action="new-family">${ICON.plus} Nova porodica</button>
     </div>
+    ${morningPanel(all)}
     <div class="stat-row">
       <div class="stat"><b>${active.length}</b><span>aktivnih<br>porodica</span></div>
       <div class="stat"><b>${sum("obs_7d")}</b><span>zapažanja<br>u poslednjih 7 dana</span></div>

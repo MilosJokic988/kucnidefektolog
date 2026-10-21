@@ -49,8 +49,8 @@ function setShell(kind, active) {
   $("#brand").href = kind === "admin" ? "#/admin" : "#/";
   const s = getSession();
   $("#side-foot").innerHTML = kind === "admin"
-    ? (adm.loggedIn() ? `<div class="person"><span class="avatar">${esc(PROFILE.inicijali)}</span><div><strong>${esc(PROFILE.ime)}</strong><small>${esc((s && s.email) || "")}</small></div></div>` : "")
-    : `<div class="person"><span class="avatar">${esc(PROFILE.inicijali)}</span><div><strong>${esc(PROFILE.ime)}</strong><small>${esc(PROFILE.kratko)}</small></div></div>
+    ? (adm.loggedIn() ? `<div class="person"><span class="avatar"><img src="${PROFILE.avatar}" alt="" onerror="this.remove()">${esc(PROFILE.inicijali)}</span><div><strong>${esc(PROFILE.ime)}</strong><small>${esc((s && s.email) || "")}</small></div></div>` : "")
+    : `<div class="person"><span class="avatar"><img src="${PROFILE.avatar}" alt="" onerror="this.remove()">${esc(PROFILE.inicijali)}</span><div><strong>${esc(PROFILE.ime)}</strong><small>${esc(PROFILE.kratko)}</small></div></div>
        ${kind === "family" ? `<a class="workspace" href="#/podrska">Pišite ${esc(PROFILE.imeDativ)} <span>↗</span></a>` : ""}`;
   $("#sidebar").classList.toggle("hidden-nav", kind === "welcome");
 }
@@ -65,7 +65,7 @@ function setCrumb(text) {
 function welcomeScreen(error = "") {
   return `
     <section class="welcome-card">
-      <div class="welcome-mark">${BRAND_MARK}</div>
+      <div class="welcome-photo"><img src="${PROFILE.avatar}" alt="${esc(PROFILE.ime)}" onerror="this.remove()"><span class="welcome-mark-mini">${BRAND_MARK}</span></div>
       <p class="eyebrow">Kućni defektolog · ${esc(PROFILE.ime)}</p>
       <h1>Dobro došli u vaš porodični prostor.</h1>
       <p class="lead">Upišite kod porodice koji ste dobili od ${esc(PROFILE.imeGenitiv)}, ili otvorite lični link iz poruke.</p>
@@ -163,7 +163,7 @@ const ctx = {
 const appOf = () => (route && route.app === "admin" ? "admin" : "family");
 
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-close],[data-action],[data-open],[data-steps],[data-step],[data-timer],[data-quick],[data-group],[data-filter],[data-tab],[data-tried],[data-del-note],[data-del-review],[data-note-for],[data-zoom],[data-scroll],[data-ed],[data-atab]");
+  const t = e.target.closest("[data-close],[data-action],[data-open],[data-steps],[data-step],[data-timer],[data-quick],[data-group],[data-filter],[data-tab],[data-tried],[data-del-note],[data-del-review],[data-note-for],[data-zoom],[data-scroll],[data-ed],[data-atab],[data-plan],[data-routine],[data-plan-from-modal]");
   if (!t) return;
   if (t.dataset.close !== undefined) { closeModal(); return; }
   if (t.dataset.action === "retry") { render(); return; }

@@ -1,7 +1,7 @@
 /* Aplikacija za roditelje: program porodice, aktivnosti, zapažanja, podrška. */
 
 import { family as api } from "./api.js";
-import { PROFILE, ISKUSTVA, BUDNOST, SAGLASNOST, PODRAZUMEVANI_SAVETI, CESTA_PITANJA } from "./config.js";
+import { PROFILE, ISKUSTVA, BUDNOST, SAGLASNOST, PODRAZUMEVANI_SAVETI, CESTA_PITANJA, BRAVO } from "./config.js";
 import {
   $, esc, md, toast, openModal, closeModal, modalOpen, fmtDate, todayISO, longToday, relTime, lastDays, isoOf,
   ICON, HERO_ART, artAt, bgAt, areaIndex, ring, store, download, formCode, copyText, daysBetween,
@@ -119,26 +119,120 @@ function thumbFor(a, cls = "act-thumb") {
   return `<span class="${cls} ${bgAt(i)}">${artAt(i)}</span>`;
 }
 
+/* „Plan za danas“: jutro (rutina) · tokom dana (glavna igra) · veče (smirivanje).
+   Sve se bira iz Draganinog programa – ona nema dodatnog posla. */
+const MORNING = /jutar|jutr|buđ|budi|oblač|ustaj|doručak/i;
+const EVENING = /več|vece|kupa|spav|smir|mirno|uspav|pred san|palačink/i;
+
+function dayNumber() { return Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / 864e5); }
+
+function dayPlan(main) {
+  const c = content();
+  const day = dayNumber();
+  const text = x => `${x.title} ${x.focus || ""} ${x.frequency || ""}`;
+  const routines = c.routines.map((r, i) => ({ kind: "routine", id: "r" + i, title: r.title, sub: r.focus || "", ref: i, src: r }));
+  const acts = c.activities.filter(a => !main || a.code !== main.code).map(a => ({ kind: "act", id: "a" + a.code, title: a.title, sub: a.goal || "", ref: a.code, src: a }));
+  const pick = (re, avoid) => {
+    const fromR = routines.filter(x => re.test(text(x.src)) && x.id !== avoid);
+    const fromA = acts.filter(x => re.test(text(x.src)) && x.id !== avoid);
+    const list = fromR.length ? fromR : fromA;
+    return list.length ? list[day % list.length] : null;
+  };
+  let morning = pick(MORNING);
+  let evening = pick(EVENING, morning && morning.id);
+  // ako u programu nema jasne jutarnje / večernje rutine, uzmi bilo koju rutinu
+  const spare = routines.filter(x => x.id !== (morning && morning.id) && x.id !== (evening && evening.id));
+  if (!morning && spare.length) morning = spare[day % spare.length];
+  const spare2 = spare.filter(x => x.id !== (morning && morning.id));
+  if (!evening && spare2.length) evening = spare2[(day + 1) % spare2.length];
+  return { morning, evening };
+}
+
+function planState() { return store.get(`plan_${S.code}_${todayISO()}`, {}); }
+
+function planRow(slot, label, mins, item, done) {
+  if (!item) return "";
+  const open = item.kind === "routine" ? `data-routine="${item.ref}"` : `data-open="${esc(item.ref)}"`;
+  return `
+    <div class="plan-row ${done ? "done" : ""}">
+      <button class="plan-check" data-plan="${slot}" aria-label="Uradili smo">${done ? "✓" : ""}</button>
+      <button class="plan-text" ${open}>
+        <span class="eyebrow">${label} · ${mins}</span>
+        <strong>${esc(item.title)}</strong>
+        ${item.sub ? `<small>${esc(item.sub.length > 110 ? item.sub.slice(0, 107) + "…" : item.sub)}</small>` : ""}
+      </button>
+      <span class="go">→</span>
+    </div>`;
+}
+
 function todayCard() {
   const a = todaysPick(program(), S.data.observations, S.pickOffset);
   if (!a) return "";
   const c = content();
   const area = c.areas[areaIndex(c, a.areaId)];
-  const doneToday = S.data.observations.some(o => o.obs_date === todayISO());
+  const loggedToday = S.data.observations.some(o => o.obs_date === todayISO());
+  const st = planState();
+  const { morning, evening } = dayPlan(a);
+  const mainDone = Boolean(st.d || loggedToday);
+  const slots = [morning && "m", "d", evening && "e"].filter(Boolean);
+  const doneN = slots.filter(k => (k === "d" ? mainDone : st[k])).length;
+  const allDone = doneN === slots.length && slots.length > 1;
   return `
-    <section class="today">
-      ${thumbFor(a, "today-art")}
-      <div class="today-body">
-        <p class="eyebrow">Predlog za danas · ${longToday()}</p>
-        <h3>${esc(a.title)}</h3>
-        <p>${a.steps.length ? `${a.steps.length} kratkih koraka` : "Kratka aktivnost"}${area ? " · " + esc(area.title) : ""}${tried(a.code) ? " · već poznata igra" : ""}</p>
-        <div class="today-actions">
-          ${a.steps.length ? `<button class="btn" data-steps="${esc(a.code)}">▶ Krenimo</button>` : ""}
-          <button class="btn-ghost" data-open="${esc(a.code)}">Pročitaj ceo opis</button>
-          <button class="btn-link" data-action="another">Drugi predlog ↻</button>
+    <section class="day-plan">
+      <div class="row-between day-plan-head">
+        <div>
+          <p class="eyebrow">Plan za danas · ${longToday()}</p>
+          <h2>${allDone ? "Sve je urađeno. 🌱" : slots.length > 1 ? `Tri male stvari za danas.` : "Predlog za danas"}</h2>
         </div>
+        ${slots.length > 1 ? `<span class="plan-count">${doneN} / ${slots.length}</span>` : ""}
       </div>
-      ${doneToday ? `<span class="today-done">✓ Danas ste već zabeležili igru</span>` : ""}
+      ${allDone ? `<p class="bravo">${esc(BRAVO[dayNumber() % BRAVO.length])}</p>` : ""}
+      ${planRow("m", "☀ Jutro", "2–3 min", morning, st.m)}
+      <div class="today ${mainDone ? "is-done" : ""}">
+        ${thumbFor(a, "today-art")}
+        <div class="today-body">
+          <p class="eyebrow">${slots.length > 1 ? "● Tokom dana · 10 min" : "Predlog za danas"}</p>
+          <h3>${esc(a.title)}</h3>
+          <p>${a.steps.length ? `${a.steps.length} kratkih koraka` : "Kratka aktivnost"}${area ? " · " + esc(area.title) : ""}${tried(a.code) ? " · već poznata igra" : ""}</p>
+          <div class="today-actions">
+            ${a.steps.length ? `<button class="btn" data-steps="${esc(a.code)}">▶ Krenimo</button>` : ""}
+            <button class="btn-ghost" data-open="${esc(a.code)}">Pročitaj ceo opis</button>
+            <button class="btn-link" data-action="another">Drugi predlog ↻</button>
+          </div>
+        </div>
+        <button class="plan-check big" data-plan="d" aria-label="Uradili smo">${mainDone ? "✓" : ""}</button>
+      </div>
+      ${planRow("e", "☾ Veče", "5 min", evening, st.e)}
+      ${loggedToday ? `<p class="muted plan-foot">✓ Danas ste već zabeležili igru – ${esc(PROFILE.imeKratko)} to vidi.</p>` : `<p class="muted plan-foot">Ne morate sve. I jedna stvar danas je dobar dan.</p>`}
+    </section>`;
+}
+
+function routineModal(i) {
+  const c = content();
+  const r = c.routines[i];
+  if (!r) return;
+  openModal(`
+    <p class="eyebrow">Podrška kroz dan</p>
+    <h2>${esc(r.title)}</h2>
+    ${r.focus ? `<p class="modal-p"><b>${esc(r.focus)}</b></p>` : ""}
+    ${r.text ? `<div class="prose">${md(r.text)}</div>` : ""}
+    ${r.activityTitles.length ? `<h4>Koristimo aktivnosti</h4><div class="chip-row">${r.activityTitles.map(t => { const a = activityByTitle(c, t); return a ? `<button class="chip" data-open="${esc(a.code)}">${esc(t)}</button>` : `<span class="chip static">${esc(t)}</span>`; }).join("")}</div>` : ""}
+    ${r.parentTracks.length ? `<h4>Šta pratimo</h4>${bulletList(r.parentTracks)}` : ""}
+    ${r.note ? `<div class="note-box">${md(r.note)}</div>` : ""}
+    <div class="modal-actions"><button class="btn" data-plan-from-modal="${i}">✓ Uradili smo</button></div>`);
+}
+
+function welcomeNote() {
+  if (S.preview ? false : store.get(`welcome_${S.code}`, false)) return "";
+  return `
+    <section class="welcome-note">
+      <img src="${PROFILE.foto}" alt="${esc(PROFILE.ime)}" onerror="this.remove()">
+      <div>
+        <p class="eyebrow">Reč od ${esc(PROFILE.imeGenitiv)}</p>
+        <p class="welcome-text">${esc(PROFILE.dobrodoslica)}</p>
+        <p class="sign">— ${esc(PROFILE.imeKratko)}</p>
+        ${S.preview ? "" : `<button class="btn-link" data-action="close-welcome">Hvala, zatvori ✕</button>`}
+      </div>
     </section>`;
 }
 
@@ -192,6 +286,8 @@ function pagePlan() {
       </div>
       ${HERO_ART}
     </section>
+
+    ${welcomeNote()}
 
     ${todayCard()}
 
@@ -578,7 +674,7 @@ function pagePodrska() {
     </div>
     <div class="support-grid">
       <div class="profile">
-        <div class="big-avatar">${esc(PROFILE.inicijali)}</div>
+        <div class="big-avatar"><img src="${PROFILE.avatar}" alt="" onerror="this.remove()">${esc(PROFILE.inicijali)}</div>
         <p class="eyebrow">Vaša podrška u programu</p>
         <h2>${esc(PROFILE.ime)}</h2>
         <p>${esc(PROFILE.titula)}<br>${esc(PROFILE.uloga)}</p>
@@ -743,6 +839,23 @@ async function saveObservation(obs) {
 export async function onClick(e, t, rerender) {
   const d = t.dataset;
   try {
+    if (d.plan) {
+      const st = planState();
+      st[d.plan] = !st[d.plan];
+      store.set(`plan_${S.code}_${todayISO()}`, st);
+      rerender(true);
+      return;
+    }
+    if (d.planFromModal !== undefined) {
+      const { morning, evening } = dayPlan(todaysPick(program(), S.data.observations, S.pickOffset));
+      const slot = morning && morning.kind === "routine" && String(morning.ref) === d.planFromModal ? "m"
+        : evening && evening.kind === "routine" && String(evening.ref) === d.planFromModal ? "e" : null;
+      if (slot) { const st = planState(); st[slot] = true; store.set(`plan_${S.code}_${todayISO()}`, st); }
+      closeModal();
+      rerender(true);
+      return;
+    }
+    if (d.routine !== undefined) { routineModal(Number(d.routine)); return; }
     if (d.open) { openActivity(d.open); return; }
     if (d.steps) { openSteps(d.steps); return; }
     if (d.zoom) { zoomImage(d.zoom); return; }
@@ -809,6 +922,7 @@ export async function onClick(e, t, rerender) {
         rerender(false);
         break;
       case "another": S.pickOffset++; rerender(true); break;
+      case "close-welcome": store.set(`welcome_${S.code}`, true); rerender(true); break;
       case "timer-toggle": toggleTimer(); break;
       case "print": window.print(); break;
       case "report": openReportWindow(reportHtml(S.data, content(), S.data.family.name, program().title)); break;
@@ -858,6 +972,7 @@ export async function onSubmit(e, rerender) {
       const body = (data.body || "").trim();
       if (!body) return;
       const saved = await api.sendMessage(S.code, body);
+      fetch("/api/notify?kind=message", { method: "POST" }).catch(() => {});
       S.data.messages.push(saved);
       S.data.messages.forEach(m => { if (m.sender === "owner") m.read_at = m.read_at || new Date().toISOString(); });
       store.del("msg_draft_" + S.code);
